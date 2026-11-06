@@ -70,9 +70,7 @@ function M.parse(curl)
 
   local function parse_flag_value(cmd, part)
     local flag = cmd.previous_flag
-    if part:match("curl") then
-      -- skip
-    elseif part:match("^[a-z0-9]+://") and cmd.url == "" then
+    if part:match("^[a-z0-9]+://") and cmd.url == "" then
       cmd.url = part
     elseif flag == "headers" then
       set_header(cmd.headers, Stringutils.cut(part, ":"))
@@ -85,7 +83,10 @@ function M.parse(curl)
     end
   end
 
-  local cmd = vim.iter(parts):fold(command, function(cmd, part)
+  local cmd = vim.iter(parts):enumerate():fold(command, function(cmd, i, part)
+    -- Only the executable token is skipped; matching on "curl" anywhere would
+    -- drop values that merely contain it (e.g. --data '{"from":"curl"}').
+    if i == 1 then return cmd end
     _ = part:match("^%-") and parse_flag(cmd, part) or parse_flag_value(cmd, part)
     return cmd
   end)
